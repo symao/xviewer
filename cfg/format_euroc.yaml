@@ -1,0 +1,32 @@
+cam0:
+    type: image  # support: file, image, video
+    path: cam0/data  # image dir path
+    ts_path: cam0/data.csv  # file path for timestamp and image
+    ts_multiplier: 1e-9  # timestamp multiplier, if your time in second, set this to 1; if your time in nanosecond, set to 1e-9
+    roi: [0,0,1,1]  # crop image roi [x0/img_cols, y0/img_rows, w/img_cols, h/img_rows]
+    resize_rate: 1.0  # resize image rate, if you want to decrease loading memory, try to resize image with 0.5 or 0.25
+    grayscale: True  # whether read in grayscale
+    start_idx: 0  # start image index
+    idx_step: 10  # image step, only load image[start_idx::idx_step]
+    max_load_mem: 1024  # [MB], if current loading image memory out of this value, then break loading
+cam1:
+    type: image  # support: file, image, video
+    path: cam1/data  # image dir path
+    ts_path: cam1/data.csv  # file path for timestamp and image
+    ts_multiplier: 1e-9  # timestamp multiplier, if your time in second, set this to 1; if your time in nanosecond, set to 1e-9
+    roi: [0,0,1,1]  # crop image roi [x0/img_cols, y0/img_rows, w/img_cols, h/img_rows]
+    resize_rate: 1.0  # resize image rate, if you want to decrease loading memory, try to resize image with 0.5 or 0.25
+    grayscale: True  # whether read in grayscale
+    start_idx: 0  # start image index
+    idx_step: 10  # image step, only load image[start_idx::idx_step]
+    max_load_mem: 1024  # [MB], if current loading image memory out of this value, then break loading
+imu0:
+    type: file  # support: file, image, video
+    path: imu0/data.csv  # file path for data
+    ts_multiplier: 1e-9  # timestamp multiplier, if your time in second, set this to 1; if your time in nanosecond, set to 1e-9
+    col_names: ["ts", "ax", "ay", "az", "wx", "wy", "wz"]  # name for each cols, use 'ts' for timestamp col
+vicon0:
+    type: file
+    path: state_groundtruth_estimate0/data.csv
+    ts_multiplier: 1e-9
+    col_names: [] # deduced from the first comment row in file

@@ -1,0 +1,7 @@
+*.pyc
+*.orig
+*~
+__pycache__/
+build/
+tmp/
+temp/

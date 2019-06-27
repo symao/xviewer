@@ -1,0 +1,32 @@
+rgb:
+    type: image  # support: file, image, video
+    path: .  # image dir path
+    ts_path: rgb.txt  # file path for timestamp and image
+    ts_multiplier: 1  # timestamp multiplier, if your time in second, set this to 1; if your time in nanosecond, set to 1e-9
+    roi: [0,0,1,1]  # crop image roi [x0/img_cols, y0/img_rows, w/img_cols, h/img_rows]
+    resize_rate: 1.0  # resize image rate, if you want to decrease loading memory, try to resize image with 0.5 or 0.25
+    grayscale: False  # whether read in grayscale
+    start_idx: 0  # start image index
+    idx_step: 2  # image step, only load image[start_idx::idx_step]
+    max_load_mem: 1024  # [MB], if current loading image memory out of this value, then break loading
+depth:
+    type: image  # support: file, image, video
+    path: .  # image dir path
+    ts_path: depth.txt  # file path for timestamp and image
+    ts_multiplier: 1  # timestamp multiplier, if your time in second, set this to 1; if your time in nanosecond, set to 1e-9
+    roi: [0,0,1,1]  # crop image roi [x0/img_cols, y0/img_rows, w/img_cols, h/img_rows]
+    resize_rate: 1.0  # resize image rate, if you want to decrease loading memory, try to resize image with 0.5 or 0.25
+    grayscale: True  # whether read in grayscale
+    start_idx: 0  # start image index
+    idx_step: 2  # image step, only load image[start_idx::idx_step]
+    max_load_mem: 1024  # [MB], if current loading image memory out of this value, then break loading
+accelerometer:
+    type: file  # support: file, image, video
+    path: accelerometer.txt  # file path for data
+    ts_multiplier: 1  # timestamp multiplier, if your time in second, set this to 1; if your time in nanosecond, set to 1e-9
+    col_names: ["ts", "ax", "ay", "az"]  # name for each cols, use 'ts' for timestamp col
+groundtruth:
+    type: file
+    path: groundtruth.txt
+    ts_multiplier: 1
+    col_names: ["ts", "tx", "ty", "tz", "qx", "qy", "qz", "qw"] # deduced from the first comment row in file

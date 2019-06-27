@@ -1,0 +1,21 @@
+cam0:
+    type: video  # support: file, image, video
+    path: img.avi  # image dir path
+    ts_path: imgts.txt  # file path for timestamp and image
+    ts_multiplier: 1.0  # timestamp multiplier, if your time in second, set this to 1; if your time in nanosecond, set to 1e-9
+    roi: [0,0,1,0.5]  # crop image roi [x0/img_cols, y0/img_rows, w/img_cols, h/img_rows]
+    resize_rate: 1.0  # resize image rate, if you want to decrease loading memory, try to resize image with 0.5 or 0.25
+    grayscale: True  # whether read in grayscale
+    start_idx: 0  # start image index
+    idx_step: 1  # image step, only load image[start_idx::idx_step]
+    max_load_mem: 1024  # [MB], if current loading image memory out of this value, then break loading
+imu0:
+    type: file  # support: file, image, video
+    path: imu_meta.txt  # file path for data
+    ts_multiplier: 1.0  # timestamp multiplier, if your time in second, set this to 1; if your time in nanosecond, set to 1e-9
+    col_names: ["ts", "ax", "ay", "az", "wx", "wy", "wz"]  # name for each cols, use 'ts' for timestamp col
+vicon0:
+    type: file
+    path: gt_pose.txt
+    ts_multiplier: 1.0
+    col_names: ["ts", "px", "py", "pz", "qw", "qz", "qy", "qz"]

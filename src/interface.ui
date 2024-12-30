@@ -21,7 +21,7 @@
        <number>0</number>
       </property>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_input" stretch="0,10,0,0,4,0">
+       <layout class="QHBoxLayout" name="horizontalLayout_input" stretch="0,10,0,0,0,4,0">
         <item>
          <widget class="QLabel" name="label_data_path">
           <property name="text">
@@ -47,6 +47,13 @@
          <widget class="QPushButton" name="pushButton_select_folder">
           <property name="text">
            <string>Open Folder</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="checkBox_select_amend">
+          <property name="text">
+           <string>Amend</string>
           </property>
          </widget>
         </item>

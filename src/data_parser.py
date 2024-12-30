@@ -9,15 +9,15 @@ import yaml
 import numpy as np
 from tqdm import tqdm
 
-
+''' @brief load data from single file '''
 class FileData():
     def __init__(self, file=None, colnames=None):
         self.ts = None
         self.col_dict = {}  # <col_name, col_data>
         if file is not None and os.path.exists(file):
-            self.load(file, colnames)
+            self.__load_from_file(file, colnames)
 
-    def str2num(self, s):
+    def __str2num(self, s):
         if s[:2] == '0x':
             return int(s, 16)
         elif '.' in s:
@@ -25,13 +25,13 @@ class FileData():
         else:
             return int(s)
 
-    def colname_prune(self, s):
+    def __colname_prune(self, s):
         ret = s.strip().split(' ')[0].strip()
         for c in '[]()*&^%$+-/':
             ret = ret.replace(c, '_')
         return ret
 
-    def find_ts_col(self, colnames, data):
+    def __find_ts_col(self, colnames, data):
         # find ts from colnames
         for i, colname in enumerate(colnames):
             s = colname.lower()
@@ -45,20 +45,20 @@ class FileData():
             return 0
         return -1
 
-    def load(self, file, colnames=None):
+    def __load_from_file(self, file, colnames=None):
         """ Load data from file, deduce colnames from first comment line if input colnames is None or empty.
             deduce timestamp col from colnames, if no colnames, try to use the first col as timestamp.
         """
         lines = open(file).readlines()[:-1]  # drop last line which may be incompleted
         first_line = lines[0].strip()
         spliter = ',' if ',' in first_line else ' '
-        data = np.array([[self.str2num(i) for i in l.strip().split(spliter)] for l in lines[1:] if '#' not in l])
+        data = np.array([[self.__str2num(i) for i in l.strip().split(spliter)] for l in lines[1:] if '#' not in l])
         data_cols = data.shape[1]
 
         # find colnames for each data col
         if colnames is None or len(colnames) == 0:
             if first_line.startswith('#'):
-                colnames = [self.colname_prune(x) for x in first_line.replace('#', '').split(spliter)]
+                colnames = [self.__colname_prune(x) for x in first_line.replace('#', '').split(spliter)]
             else:
                 colnames = ['col%d' % i for i in range(data_cols)]
         if colnames is not None and len(colnames) != data_cols:
@@ -66,7 +66,7 @@ class FileData():
             colnames = ['col%d' % i for i in range(data_cols)]
 
         # find the ts col
-        ts_col_idx = self.find_ts_col(colnames, data)
+        ts_col_idx = self.__find_ts_col(colnames, data)
 
         # set data to output
         if ts_col_idx >= 0:
@@ -75,7 +75,6 @@ class FileData():
         else:
             self.ts = np.arange(data.shape[0], dtype=float)
             self.col_dict = dict([(name, data[:, i]) for i, name in enumerate(colnames)])
-
 
 class ImageLoaderEuroc():
     def __init__(self, img_dir, ts_file, start_idx=0, stop_idx=-1, idx_step=1):
@@ -217,12 +216,19 @@ class DataParser():
     def load_file(self, file):
         try:
             file_data = FileData(file)
+            self.__auto_adjust_ts(file_data)
         except:
             print('[ERROR]failed load input file:%s, only support pure numeric (no string) table file.' % file)
             return
         self.file_dict[os.path.basename(file)] = file_data  # read file data
 
-    def read_img_from_cfg(self, cfg, data_dir):
+    def __auto_adjust_ts(self, file_data):
+        # auto convert timestamp from nanoseconds to seconds
+        # if ts duration beyond 1e7, we assume it's in nanoseconds
+        if file_data.ts[-1] - file_data.ts[0] > 1e7:
+            file_data.ts /= 1e9
+
+    def __read_img_from_cfg(self, cfg, data_dir):
         type = cfg['type']
         path = cfg['path']
         ts_path = cfg['ts_path']
@@ -276,20 +282,24 @@ class DataParser():
                 break
         return img_data
 
-    def read_file_from_cfg(self, cfg, data_dir):
+    def __read_file_from_cfg(self, cfg, data_dir):
         path = cfg['path']
         abs_path = os.path.join(data_dir, path)
         if not os.path.exists(abs_path) or not os.path.isfile(abs_path):
             return None
-        ts_multiplier = float(cfg['ts_multiplier'])
-        colnames = cfg['col_names']
-        file_data = FileData(abs_path, colnames)
-        if ts_multiplier != 1:
-            file_data.ts *= ts_multiplier
+        colnames = cfg['col_names'] if 'col_names' in cfg else []
+        if 'ts_multiplier' in cfg:
+            ts_multiplier = float(cfg['ts_multiplier'])
+            file_data = FileData(abs_path, colnames)
+            if ts_multiplier != 1:
+                file_data.ts *= ts_multiplier
+        else:
+            file_data = FileData(abs_path, colnames)
+            self.__auto_adjust_ts(file_data)
         return file_data
 
     def load_dir(self, cfg_file, data_dir=None):
-        print(cfg_file)
+        print('open data dir by config:', cfg_file)
         if cfg_file is None or not os.path.exists(cfg_file):
             print('[ERROR]cfg file not exist %s' % str(cfg_file))
             return
@@ -304,13 +314,13 @@ class DataParser():
             if not isinstance(cfg, dict) or not 'type' in cfg:
                 continue
             if cfg['type'] in ['image', 'video', 'image_raw']:
-                img_list = self.read_img_from_cfg(cfg, data_dir)
+                img_list = self.__read_img_from_cfg(cfg, data_dir)
                 if len(img_list) > 0:
                     self.img_dict[name] = img_list
                 else:
                     print("[ERROR]Load image data '%s' failed.\n" % name)
             elif cfg['type'] == 'file':
-                file_data = self.read_file_from_cfg(cfg, data_dir)
+                file_data = self.__read_file_from_cfg(cfg, data_dir)
                 if file_data is not None:
                     self.file_dict[name] = file_data
 

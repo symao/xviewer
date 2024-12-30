@@ -9,11 +9,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from data_parser import DataParser
 
-# PyQt6
-from interface import *
-from PyQt6.QtWidgets import *
-from PyQt6.QtGui import *
-from PyQt6.QtCore import *
+try:
+    # PyQt6
+    from interface_pyqt6 import *
+    from PyQt6.QtWidgets import *
+    from PyQt6.QtGui import *
+    from PyQt6.QtCore import *
+    print("Using PyQt6")
+except:
+    # PyQt5
+    from interface_pyqt5 import *
+    from PyQt5.QtWidgets import *
+    from PyQt5.QtGui import *
+    from PyQt5.QtCore import *
+    print("Using PyQt5")
 
 # Matplotlib must later than qt, otherwise, it will crush
 from matplotlib.widgets import MultiCursor
@@ -24,6 +33,9 @@ project_dir = os.path.abspath(os.path.join(os.path.split(os.path.abspath(__file_
 cfg_dir = os.path.abspath(os.path.join(project_dir, 'cfg'))
 tmp_dir = os.path.join(project_dir, 'tmp')
 
+###### define some useful function for expression calculation ##########
+def vel(t,x,y,z):
+    return np.sqrt(np.diff(x)**2+np.diff(y)**2+np.diff(z)**2)/np.diff(t)
 
 def generate_curve_colors():
     # colors of curves
@@ -37,7 +49,6 @@ def generate_curve_colors():
     colors = colors[1::3] + colors[2::3] + colors[0::3]
     return colors
 
-
 curve_color_list = generate_curve_colors()
 curve_linestyle_list = ['-', '--', ':', ':.', '-.',
                         '*', '+', 'o', '.', 's', '^', 'p',
@@ -45,8 +56,6 @@ curve_linestyle_list = ['-', '--', ':', ':.', '-.',
                         '--*', '--+', '--o', '--s', '--^', '--p']
 
 # one curve package
-
-
 class CurvePack():
     def __init__(self, filename, colname, x=None, y=None):
         self.filename = filename
@@ -62,7 +71,6 @@ class CurvePack():
         self.name = self.filename+col_indicator+self.colname
         self.var = self.name.replace(col_indicator, '_').replace('.', '_')
         self.expression = self.name
-
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self):
@@ -116,9 +124,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def reset(self):
         self.xrange = (0, 1)
-        self.data_loaded = False
-        self.video_loaded = False
-        self.curve_dict = {}
         self.prev_click_row = None
         self.axvline_widget = None
         self.cur_x_axis = None
@@ -139,6 +144,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.horizontalSlider_video_slider.setValue(0)
         self.axes.cla()
         self.canvas.draw()
+    
+    def clear_data(self):
+        self.data_loaded = False
+        self.video_loaded = False
+        self.curve_dict = {}
 
     def enableVideoUi(self):
         self.pushButton_play.setEnabled(True)
@@ -182,6 +192,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def open_data_path(self, data_path):
         self.reset()
+        if not self.checkBox_select_amend.isChecked():
+            self.clear_data()
 
         # handle opened path
         self.save_history_path(data_path)
@@ -252,12 +264,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.open_data_path(data_path)
 
     def on_click_select_dir(self):
-        self.reset()
         # set default open dir, set history opendir as default dir if stored.
         remember_path = self.load_history_path()
-        if remember_path is None:
-            remember_path = project_dir
-        data_path = QFileDialog.getExistingDirectory(self, "Open data dir", remember_path)
+        init_path = project_dir
+        if os.path.isdir(remember_path):
+            init_path = remember_path
+        elif os.path.isfile(remember_path):
+            init_path = os.path.dirname(remember_path)
+        data_path = QFileDialog.getExistingDirectory(self, "Open data dir", init_path)
         if len(data_path) == 0:
             return
         self.open_data_path(data_path)
@@ -300,12 +314,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.comboBox_linestyle.setCurrentText(curve_pack.linestyle)
         self.spinBox_linewidth.setValue(curve_pack.linewidth)
 
+    def remove_curve(self, line_widget):
+        try:
+            # old matplotlib support
+            self.axes.lines.remove(line_widget)
+        except:
+            # new matplotlib support
+            self.axes.lines[self.axes.lines.index(line_widget)].remove()
+
     def on_click_varlist(self):
         click_row = self.listWidget_variable.currentRow()
         curve_pack = self.curve_dict[self.listWidget_variable.item(click_row).text()]
         if self.prev_click_row == click_row and curve_pack.widget is not None:
             # remove var once click again
-            self.axes.lines.remove(curve_pack.widget)
+            self.remove_curve(curve_pack.widget)
             self.listWidget_variable.item(click_row).setBackground(self.list_widget_default_background)
             self.listWidget_variable.clearSelection()
             self.lineEdit_expression.setText('')
@@ -333,7 +355,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # clear history plot cache
         if curve_pack.widget is not None:
-            self.axes.lines.remove(curve_pack.widget)
+            self.remove_curve(curve_pack.widget)
             curve_pack.widget = None
 
         # plot data
@@ -415,7 +437,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.update_axes()
 
     def on_click_about(self):
-        QMessageBox.about(self, 'XViewer 1.0', "Copyright 2018-2023 @shuyuanmao\nEmail: maoshuyuan123@gmail.com")
+        QMessageBox.about(self, 'XViewer 1.0', "Copyright 2018-2025 @shuyuanmao\nEmail: maoshuyuan123@gmail.com")
 
     def on_comboBox_linestyle_activated(self, text):
         if isinstance(text, str):
@@ -522,7 +544,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def plot_ts_curser(self, ts):
         if self.axvline_widget is not None:
-            self.axes.lines.remove(self.axvline_widget)
+            self.remove_curve(self.axvline_widget)
         self.axvline_widget = self.axes.axvline(ts, ls='--', color='black', linewidth=1)
         self.update_axes(False, False)
 
